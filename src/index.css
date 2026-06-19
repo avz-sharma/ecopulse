@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Backgrounds */
+    --bg-950: #070A13;
+    --bg-900: #081018;
+    --bg-850: #0B1320;
+    --surface-800: #101B2B;
+    --surface-700: #142235;
+    --border-soft: rgba(255, 255, 255, 0.06);
+
+    /* Primary brand */
+    --primary-500: #20C16A;
+    --primary-400: #43D98A;
+    --primary-300: #79E6A9;
+
+    /* Secondary accents */
+    --amber-500: #F2B134;
+    --amber-400: #F7C95C;
+    --orange-500: #F97316;
+    --red-500: #E25555;
+
+    /* Text */
+    --text-100: #F3F7F9;
+    --text-300: #CBD5E1;
+    --text-500: #94A3B8;
+  }
+
+  body {
+    @apply bg-bg-950 text-text-100;
+  }
+}

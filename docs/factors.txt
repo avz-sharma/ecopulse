@@ -1,0 +1,8 @@
+Level 1: Exact product
+"Amul Toned Milk"
+
+Level 2: Product type
+"Milk"
+
+Level 3: Category average
+"Dairy"

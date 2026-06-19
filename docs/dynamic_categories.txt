@@ -1,0 +1,47 @@
+| Category           | Default Factor (kg CO₂e/kg) |
+| ------------------ | --------------------------: |
+| Vegetables         |                         0.5 |
+| Fruits             |                         0.7 |
+| Wheat / Atta       |                         1.5 |
+| Rice               |                         2.7 |
+| Pulses / Dal       |                         0.9 |
+| Plant Milk         |                         1.0 |
+| Milk               |                         1.4 |
+| Yogurt / Curd      |                         2.0 |
+| Cheese             |                         9.0 |
+| Butter             |                        11.5 |
+| Eggs               |                         3.5 |
+| Chicken            |                         4.5 |
+| Pork               |                         6.0 |
+| Fish               |                         5.0 |
+| Beef               |                        30.0 |
+| Cooking Oil        |                         3.5 |
+| Sugar              |                         2.0 |
+| Tea                |                         5.0 |
+| Coffee             |                       15–30 |
+| Cookies / Biscuits |                         2.5 |
+| Chips / Snacks     |                         2.5 |
+| Household Products |                         2.0 |
+| Personal Care      |                         2.0 |
+
+[
+  "Dairy",
+  "Plant Milks",
+  "Rice & Grains",
+  "Legumes & Pulses",
+  "Vegetables",
+  "Fruits",
+  "Meat",
+  "Poultry",
+  "Eggs",
+  "Seafood",
+  "Cooking Oils",
+  "Beverages",
+  "Packaged Snacks",
+  "Bakery & Cereals",
+  "Condiments & Sweeteners",
+  "Frozen Foods",
+  "Personal Care",
+  "Household Cleaning",
+  "Other"
+]

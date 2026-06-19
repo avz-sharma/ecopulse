@@ -1,0 +1,11 @@
+Exact match found?
+    Yes -> Use exact factor
+
+No?
+    Use product type factor
+
+Still no?
+    Use category average
+
+Still no?
+    Use generic fallback (2.0 kg CO₂e/kg)
