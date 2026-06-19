@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
+import { Analytics } from '@vercel/analytics/react';
 import {
   getAuth,
   signInAnonymously,
@@ -841,6 +842,7 @@ export default function App() {
 
   return (  
     <div className="min-h-screen font-sans antialiased flex flex-col md:flex-row bg-bg-900 text-text-100">
+      <Analytics />
 
       {/* === SIDEBAR (Inspired by PodCaster Dashboard Template) === */}  
       <aside className="w-full md:w-64 bg-bg-850 border-r border-border-soft flex flex-col justify-between p-5 flex-shrink-0">  
