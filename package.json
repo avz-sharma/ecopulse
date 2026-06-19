@@ -1,5 +1,6 @@
 {
   "name": "ecopulse",
+  "description": "🌿 Collective Climate Intelligence platform transforming daily quick-commerce checkouts into proactive planetary action. Features zero-hallucination receipt parsing, dynamic compliance curve gauges, localized squad leaderboards, and forward-looking AI behavior coaching. Built with React 18, Vite, Tailwind CSS, and serverless Firebase. 🚀",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

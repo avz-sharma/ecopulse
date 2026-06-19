@@ -1,7 +1,7 @@
-# 🌱 EcoPulse Collective v2.0
+# 🌱 EcoPulse
 
-> **Active & Seamless Eco-Action Insights.**
-> *Transforming modern daily commerce into mindful planetary action.*
+🌿 Collective Climate Intelligence platform transforming daily quick-commerce checkouts into proactive planetary action. Features zero-hallucination receipt parsing, dynamic compliance curve gauges, localized squad leaderboards, and forward-looking AI behavior coaching. Built with React 18, Vite, Tailwind CSS, and serverless Firebase. 🚀
+
 
 ![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Vite](https://img.shields.io/badge/Vite_Build-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
