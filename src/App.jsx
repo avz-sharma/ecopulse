@@ -20,10 +20,11 @@ import {
 } from 'firebase/firestore';
 
 // Component Imports
-import Leaderboard from './components/Leaderboard';
+import Leaderboard, { updateSquadAggregatedEmissions } from './components/Leaderboard';
 import Uploader from './components/Uploader';
 import Scorecard from './components/Scorecard';
 import ActionPlan from './components/ActionPlan';
+import Categories from './components/Categories';
 
 // Logic Imports
 import { 
@@ -78,10 +79,13 @@ export default function App() {
   // Real-time Databases (Synchronized State Lists)
   const [myReceipts, setMyReceipts] = useState([]);
   const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
+  const [currentUserStandings, setCurrentUserStandings] = useState(null);
 
   // Gamification & Communities
   const [squadCode, setSquadCode] = useState("GLOBAL");
   const [actionPointsBonus, setActionPointsBonus] = useState(0);
+  const [showCongrats, setShowCongrats] = useState(false);
+  const [hasQuestGradeUpgrade, setHasQuestGradeUpgrade] = useState(false);
 
   // User Selection / Interactive Controls
   const [activeTab, setActiveTab] = useState("overview"); // overview | quests | ledger | diagnostics
@@ -199,17 +203,39 @@ export default function App() {
     return () => unsubscribePrivate();
   }, [activeUserId]);
 
-  // B: Listen to Public Leaderboard Data
+  // Sync Current User's Specific Standings Document
+  useEffect(() => {
+    if (!activeUserId) {
+      setCurrentUserStandings(null);
+      return;
+    }
+
+    const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', activeUserId);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setCurrentUserStandings({ uid: docSnap.id, ...docSnap.data() });
+      } else {
+        setCurrentUserStandings(null);
+      }
+    }, (error) => {
+      console.error("Error syncing user standings document:", error);
+    });
+
+    return () => unsubscribe();
+  }, [activeUserId]);
+
+  // B: Listen to Public Leaderboard Data (Pointing to users collection)
   useEffect(() => {
     if (!user) return;
 
-    const publicQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard'));
+    const publicQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'users'));
     const unsubscribePublic = onSnapshot(publicQuery, (snapshot) => {
       const standings = [];
-      snapshot.forEach((doc) => {
-        standings.push({ userId: doc.id, ...doc.data() });
+      snapshot.forEach((docSnap) => {
+        standings.push({ userId: docSnap.id, ...docSnap.data() });
       });
-      const ranked = standings.sort((a, b) => (b.scoreValue || 0) - (a.scoreValue || 0));
+      // Sort by weekly emissions ASCENDING (lower emissions = better rank)
+      const ranked = standings.sort((a, b) => (a.weeklyEmissions || 0) - (b.weeklyEmissions || 0));
       setGlobalLeaderboard(ranked);
     }, (err) => {
       console.error("Could not trace global ranks: ", err);
@@ -221,35 +247,87 @@ export default function App() {
   // ==========================================
   // PHASE 3: Public Profile Syncer
   // ==========================================
-  const syncPublicCarbonProfile = useCallback(async (currentNickname, customReceipts = myReceipts, activeBonus = actionPointsBonus) => {
+  const syncPublicCarbonProfile = useCallback(async (currentNickname, customReceipts = myReceipts, activeBonus = actionPointsBonus, activeUpgrade = hasQuestGradeUpgrade) => {
     if (!activeUserId) return;
 
     const stats = calculateIndividualMetrics(customReceipts);
+    if (activeUpgrade) {
+      const grades = ['F', 'D', 'C', 'B', 'A'];
+      const idx = grades.indexOf(stats.grade);
+      if (idx !== -1 && idx < grades.length - 1) {
+        stats.grade = grades[idx + 1];
+      }
+    }
     const finalScore = Math.min(100, stats.scoreValue + activeBonus);
+    const title = getRankBadge(10, finalScore).split(" ").slice(1).join(" ") || "Carbon Consumer";
     try {
-      const publicProfileDoc = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', activeUserId);
+      const publicProfileDoc = doc(db, 'artifacts', appId, 'public', 'data', 'users', activeUserId);
       await setDoc(publicProfileDoc, {
         displayName: currentNickname || userNickname,
+        title: title,
+        weeklyEmissions: stats.totalEmissions,
         scoreValue: finalScore,
-        squadCode: squadCode.toUpperCase(),
-        averageEmissions: stats.averageWeekly,
         grade: stats.grade,
-        totalTracked: customReceipts.length,
         lastUpdated: serverTimestamp()
       }, { merge: true });
+
+      // Recalculate dynamic footprint averages instantly if user has a squad
+      if (currentUserStandings?.squadId) {
+        await updateSquadAggregatedEmissions(currentUserStandings.squadId, db, appId);
+      }
     } catch (err) {
       console.error("Error synchronizing public statistics: ", err);
     }
-  }, [activeUserId, userNickname, myReceipts, squadCode, actionPointsBonus]);
+  }, [activeUserId, userNickname, myReceipts, actionPointsBonus, hasQuestGradeUpgrade, currentUserStandings?.squadId]);
 
   // Keep public leaderboard synced with latest receipts list dynamically
   useEffect(() => {
     if (activeUserId && myReceipts.length > 0) {
-      syncPublicCarbonProfile(userNickname, myReceipts, actionPointsBonus);
+      syncPublicCarbonProfile(userNickname, myReceipts, actionPointsBonus, hasQuestGradeUpgrade);
     }
-  }, [myReceipts, userNickname, activeUserId, actionPointsBonus, squadCode, syncPublicCarbonProfile]);
+  }, [myReceipts, userNickname, activeUserId, actionPointsBonus, squadCode, syncPublicCarbonProfile, hasQuestGradeUpgrade]);
+
+  // Quests callbacks & timer
+  const handleQuestsCompleted = useCallback(() => {
+    setActionPointsBonus(30);
+    setHasQuestGradeUpgrade(true);
+    setShowCongrats(true);
+  }, []);
+
+  const handleQuestsUncompleted = useCallback(() => {
+    setActionPointsBonus(0);
+    setHasQuestGradeUpgrade(false);
+    setShowCongrats(false);
+  }, []);
+
+  useEffect(() => {
+    if (showCongrats) {
+      const timer = setTimeout(() => {
+        setShowCongrats(false);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [showCongrats]);
 
   const myCalculatedStats = useMemo(() => calculateIndividualMetrics(myReceipts), [myReceipts]);
+  const finalCalculatedStats = useMemo(() => {
+    const stats = { ...myCalculatedStats };
+    stats.scoreValue = Math.min(100, stats.scoreValue + actionPointsBonus);
+    if (hasQuestGradeUpgrade) {
+      const grades = ['F', 'D', 'C', 'B', 'A'];
+      const idx = grades.indexOf(stats.grade);
+      if (idx !== -1 && idx < grades.length - 1) {
+        stats.grade = grades[idx + 1];
+
+        // Upgrade complianceScore to match the new grade benchmark
+        if (stats.grade === 'A') stats.complianceScore = Math.max(stats.complianceScore, 85);
+        else if (stats.grade === 'B') stats.complianceScore = Math.max(stats.complianceScore, 72);
+        else if (stats.grade === 'C') stats.complianceScore = Math.max(stats.complianceScore, 57);
+        else if (stats.grade === 'D') stats.complianceScore = Math.max(stats.complianceScore, 42);
+      }
+    }
+    return stats;
+  }, [myCalculatedStats, hasQuestGradeUpgrade, actionPointsBonus]);
   const dailyStreak = useMemo(() => calculateDailyStreak(myReceipts), [myReceipts]);
 
   const userRankData = useMemo(() => {
@@ -262,11 +340,7 @@ export default function App() {
     return { rank, total, percentile };
   }, [globalLeaderboard, activeUserId]);
 
-  const filteredBoard = useMemo(() => {
-    const code = (squadCode || "").trim().toUpperCase();
-    if (code === "GLOBAL" || code === "") return globalLeaderboard;
-    return globalLeaderboard.filter(u => (u.squadCode || "").toUpperCase().trim() === code);
-  }, [globalLeaderboard, squadCode]);
+
 
   // ==========================================
   // PHASE 4: Dual-Agent Core Execution
@@ -686,12 +760,12 @@ export default function App() {
 
           <div className="bg-surface-800 border border-border-soft rounded-[18px] p-5 shadow-sm">  
             <span className="text-[10px] text-text-500 uppercase tracking-widest font-extrabold block mb-1">Global Score</span>  
-            <span className="text-2xl font-extrabold text-amber-500 font-mono">{Math.min(100, myCalculatedStats.scoreValue + actionPointsBonus)} Pts</span>  
+            <span className="text-2xl font-extrabold text-amber-500 font-mono">{finalCalculatedStats.scoreValue} Pts</span>  
           </div>
 
           <div className="bg-surface-800 border border-border-soft rounded-[18px] p-5 flex flex-col items-center justify-center shadow-sm">  
             <span className="text-[10px] text-text-500 uppercase tracking-widest font-extrabold block mb-1 w-full text-left">Active Compliance</span>  
-            {getEcoStateIndicator(myCalculatedStats.grade)}  
+            {getEcoStateIndicator(finalCalculatedStats.grade)}  
           </div>
 
           <div className="bg-surface-800 border border-border-soft rounded-[18px] p-5 shadow-sm">  
@@ -703,7 +777,7 @@ export default function App() {
         {/* Row 2: Scorecard Container */}  
         <Scorecard   
           userNickname={userNickname}   
-          myCalculatedStats={myCalculatedStats}   
+          myCalculatedStats={finalCalculatedStats}   
           userRankData={userRankData}   
           selectedReceipt={selectedReceipt}   
           myReceipts={myReceipts}   
@@ -711,52 +785,37 @@ export default function App() {
           apiKeyValue={apiKeyValue}  
         />
 
-        {/* Row 3: Split Parameters Table and Carbon Quests */}  
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">  
-            
-          {/* Parameter Details Table (Renders on the left) */}  
-          <div className="lg:col-span-7 bg-surface-800 border border-border-soft rounded-[18px] p-6 shadow-sm">  
-            <h3 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">Your Basket Breakdown</h3>  
-            <div className="overflow-x-auto">  
-              <table className="w-full text-left border-collapse text-xs">  
-                <thead>  
-                  <tr className="text-text-500 font-bold border-b border-border-soft">  
-                    <th className="pb-2.5">Consumable Item</th>  
-                    <th className="pb-2.5 text-center">Qty</th>  
-                    <th className="pb-2.5">Pack Size</th>  
-                    <th className="pb-2.5 text-right">CO2e (kg)</th>  
+        {/* Row 3: Basket Breakdown Table */}  
+        <div className="bg-surface-800 border border-border-soft rounded-[18px] p-6 shadow-sm">  
+          <h3 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">Your Basket Breakdown</h3>  
+          <div className="overflow-x-auto">  
+            <table className="w-full text-left border-collapse text-xs">  
+              <thead>  
+                <tr className="text-text-500 font-bold border-b border-border-soft">  
+                  <th className="pb-2.5">Consumable Item</th>  
+                  <th className="pb-2.5 text-center">Qty</th>  
+                  <th className="pb-2.5">Pack Size</th>  
+                  <th className="pb-2.5 text-right">CO2e (kg)</th>  
+                </tr>  
+              </thead>  
+              <tbody className="divide-y divide-border-soft">  
+                {(selectedReceipt?.items || []).map((item, index) => (  
+                  <tr key={index} className="text-text-300">  
+                    <td className="py-3 font-semibold text-text-100">  
+                      <div className="flex flex-col">  
+                        <span>{item.raw_name}</span>  
+                        {item.status === 'unmapped_penalty' && (  
+                          <span className="text-[8px] text-red-500/90 font-mono">unmapped baseline penalty</span>  
+                        )}  
+                      </div>  
+                    </td>  
+                    <td className="py-3 text-center font-mono">{item.quantity}</td>  
+                    <td className="py-3 text-text-500 font-mono">{item.pack_size || '-'}</td>  
+                    <td className="py-3 text-right font-mono font-bold text-amber-500">{(item.co2e_kg || 0).toFixed(2)}</td>  
                   </tr>  
-                </thead>  
-                <tbody className="divide-y divide-border-soft">  
-                  {(selectedReceipt?.items || []).map((item, index) => (  
-                    <tr key={index} className="text-text-300">  
-                      <td className="py-3 font-semibold text-text-100">  
-                        <div className="flex flex-col">  
-                          <span>{item.raw_name}</span>  
-                          {item.status === 'unmapped_penalty' && (  
-                            <span className="text-[8px] text-red-500/90 font-mono">unmapped baseline penalty</span>  
-                          )}  
-                        </div>  
-                      </td>  
-                      <td className="py-3 text-center font-mono">{item.quantity}</td>  
-                      <td className="py-3 text-text-500 font-mono">{item.pack_size || '-'}</td>  
-                      <td className="py-3 text-right font-mono font-bold text-amber-500">{(item.co2e_kg || 0).toFixed(2)}</td>  
-                    </tr>  
-                  ))}  
-                </tbody>  
-              </table>  
-            </div>  
-          </div>
-
-          {/* Solid Green Accent Carbon Quests Widget (Renders on the right) */}  
-          <div className="lg:col-span-5 flex flex-col">  
-            <ActionPlan   
-              selectedReceipt={selectedReceipt}   
-              apiKeyValue={apiKeyValue}   
-              setActionPointsBonus={setActionPointsBonus}
-              onQuestsCompleted={() => setActionPointsBonus(50)}
-              onQuestsUncompleted={() => setActionPointsBonus(0)}
-            />  
+                ))}  
+              </tbody>  
+            </table>  
           </div>  
         </div>
 
@@ -781,8 +840,8 @@ export default function App() {
           selectedReceipt={selectedReceipt} 
           apiKeyValue={apiKeyValue} 
           setActionPointsBonus={setActionPointsBonus} 
-          onQuestsCompleted={() => setActionPointsBonus(50)}
-          onQuestsUncompleted={() => setActionPointsBonus(0)}
+          onQuestsCompleted={handleQuestsCompleted}
+          onQuestsUncompleted={handleQuestsUncompleted}
         />  
       </div>  
     );  
@@ -794,37 +853,85 @@ export default function App() {
         <div className="lg:col-span-6 bg-surface-800 border border-border-soft rounded-[18px] p-6 shadow-sm">  
           <h3 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">My Checkout Logs</h3>  
           <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">  
-            {myReceipts.map((record, index) => (  
-              <button  
-                type="button"  
-                key={record.id || index}  
-                onClick={() => setSelectedReceipt(record)}  
-                className={`w-full text-left flex items-center justify-between p-4 rounded-xl border transition ${  
-                  selectedReceipt?.id === record.id   
-                    ? 'bg-surface-700 border-primary-300/20'   
-                    : 'bg-bg-850 border-border-soft hover:bg-surface-700/50'  
-                }`}  
-              >  
-                <div>  
-                  <h4 className="text-xs font-bold text-text-100">{record.merchant}</h4>  
-                  <span className="text-[9px] text-text-500">  
-                    {record.timestamp?.seconds ? new Date(record.timestamp.seconds * 1000).toLocaleDateString() : 'Syncing...'}  
-                  </span>  
+            {myReceipts.map((record, index) => {
+              const isEditing = editingLogId === record.id;
+              return (
+                <div  
+                  key={record.id || index}  
+                  onClick={() => setSelectedReceipt(record)}  
+                  className={`w-full text-left flex items-center justify-between p-4 rounded-xl border transition cursor-pointer ${  
+                    selectedReceipt?.id === record.id   
+                      ? 'bg-surface-700 border-primary-300/20'   
+                      : 'bg-bg-850 border-border-soft hover:bg-surface-700/50'  
+                  }`}  
+                >  
+                  <div className="flex-1 min-w-0 pr-4">  
+                    {isEditing ? (
+                      <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={tempLogName}
+                          onChange={(e) => setTempLogName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveLogName(record.id);
+                            if (e.key === 'Escape') setEditingLogId(null);
+                          }}
+                          className="bg-surface-800 border border-border-soft rounded px-2 py-1 text-xs text-text-100 font-bold focus:outline-none w-full"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSaveLogName(record.id)}
+                          className="text-[10px] text-primary-400 font-bold hover:text-primary-300"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingLogId(null)}
+                          className="text-[10px] text-text-500 hover:text-text-400"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2 group/log">  
+                        <h4 className="text-xs font-bold text-text-100 truncate">{record.merchant}</h4>  
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingLogId(record.id);
+                            setTempLogName(record.merchant || "");
+                          }}
+                          className="opacity-0 group-hover/log:opacity-100 focus:opacity-100 text-[10px] text-amber-500 hover:text-amber-400 transition px-1"
+                          aria-label={`Rename ${record.merchant}`}
+                        >
+                          ✏️
+                        </button>
+                      </div>  
+                    )}
+                    <span className="text-[9px] text-text-500 block mt-1">  
+                      {record.timestamp?.seconds ? new Date(record.timestamp.seconds * 1000).toLocaleDateString() : 'Syncing...'}  
+                    </span>  
+                  </div>  
+                  <div className="text-right shrink-0">  
+                    <span className="text-xs font-bold text-amber-500 font-mono">{(record.total_co2e || 0).toFixed(2)} kg</span>  
+                    <span className="text-[10px] block text-text-500">Grade {record.grade}</span>  
+                  </div>  
                 </div>  
-                <div className="text-right">  
-                  <span className="text-xs font-bold text-amber-500 font-mono">{(record.total_co2e || 0).toFixed(2)} kg</span>  
-                  <span className="text-[10px] block text-text-500">Grade {record.grade}</span>  
-                </div>  
-              </button>  
-            ))}  
+              );
+            })}  
           </div>  
         </div>  
         <div className="lg:col-span-6">  
           <Leaderboard 
-            globalLeaderboard={filteredBoard} 
-            activeUserId={activeUserId} 
-            squadCode={squadCode}
-            setSquadCode={setSquadCode}
+            currentUser={currentUserStandings}
+            currentUserStats={finalCalculatedStats}
+            activeUserId={activeUserId}
+            db={db}
+            appId={appId}
+            auth={auth}
           />  
         </div>  
       </div>  
@@ -864,7 +971,7 @@ export default function App() {
                   </div>  
                 )}  
                 <span className="text-[10px] text-primary-300/80 block truncate font-semibold">  
-                  {getRankBadge(userRankData.rank, myCalculatedStats.scoreValue)}  
+                  {getRankBadge(userRankData.rank, finalCalculatedStats.scoreValue)}  
                 </span>  
               </div>  
             </div>
@@ -924,6 +1031,19 @@ export default function App() {
               <span>📊</span>  
               <span>Collective Ledger</span>  
             </button>  
+            
+            <button  
+              type="button"  
+              onClick={() => setActiveTab("categories")}  
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-200 ${  
+                activeTab === "categories"   
+                  ? "bg-primary-500 text-text-100 shadow-md shadow-primary-500/10"   
+                  : "text-text-300 hover:text-text-100 hover:bg-surface-800/50"  
+              }`}  
+            >  
+              <span>🏷️</span>  
+              <span>Categories</span>  
+            </button>  
           </nav>  
         </div>
 
@@ -973,13 +1093,36 @@ export default function App() {
 
         {/* Render Active View Panels */}  
         <div className={`p-6 max-w-7xl w-full mx-auto space-y-6 transition-all duration-1000 will-change-transform ${
-          (myCalculatedStats.grade === 'D' || myCalculatedStats.grade === 'F') ? 'grayscale-[0.4] saturate-50 opacity-90' : ''
+          (finalCalculatedStats.grade === 'D' || finalCalculatedStats.grade === 'F') ? 'grayscale-[0.4] saturate-50 opacity-90' : ''
         }`}>  
           {activeTab === "overview" && renderOverviewTab()}  
           {activeTab === "quests" && renderQuestsTab()}  
           {activeTab === "ledger" && renderLedgerTab()}  
+          {activeTab === "categories" && <Categories myReceipts={myReceipts} />}  
         </div>  
       </div>  
+
+      {/* --- SLIDING CONGRATS BANNER OVERLAY --- */}
+      <div 
+        className={`fixed left-4 right-4 md:left-auto md:right-6 bottom-6 md:w-96 bg-gradient-to-r from-emerald-600 to-teal-600 text-text-100 p-4 rounded-2xl font-bold shadow-2xl transition-all duration-500 ease-out transform z-50 flex items-center space-x-3 border border-emerald-400/30 ${
+          showCongrats ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-95 pointer-events-none'
+        }`}
+      >
+        <div className="text-2xl animate-bounce">🎉</div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-xs uppercase tracking-wider text-emerald-100 font-extrabold">Weekly Quests Completed!</p>
+          <p className="text-[11px] text-white/90 font-medium mt-0.5">Your climate compliance grade has been upgraded by 1 step!</p>
+        </div>
+        <button 
+          type="button" 
+          onClick={() => setShowCongrats(false)}
+          className="text-white/60 hover:text-white text-xs font-bold transition shrink-0 self-start"
+          aria-label="Dismiss congrats toast"
+        >
+          ✕
+        </button>
+      </div>
+
     </div>  
   );
 }

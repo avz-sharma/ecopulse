@@ -165,7 +165,7 @@ export const getReceiptGradeAndPoints = (total_co2e) => {
 
 export const calculateIndividualMetrics = (receiptList) => {
   if (receiptList.length === 0) {
-    return { scoreValue: 0, averageWeekly: 0, grade: 'N/A' };
+    return { scoreValue: 0, averageWeekly: 0, grade: 'N/A', complianceScore: 0, totalEmissions: 0 };
   }
 
   const totalSum = receiptList.reduce((acc, curr) => acc + (curr.total_co2e || 0), 0);
@@ -190,7 +190,7 @@ export const calculateIndividualMetrics = (receiptList) => {
   else if (avgScore >= 50) grade = "C";
   else if (avgScore >= 35) grade = "D";
 
-  return { scoreValue, averageWeekly, grade };
+  return { scoreValue, averageWeekly, grade, complianceScore: avgScore, totalEmissions: parseFloat(totalSum.toFixed(2)) };
 };
 
 export const getRankBadge = (rankVal, scoreVal) => {
