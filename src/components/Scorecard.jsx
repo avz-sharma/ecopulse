@@ -33,7 +33,7 @@ export default function Scorecard({
       const prompt = `A user has generated a carbon footprint of ${selectedReceipt.total_co2e.toFixed(2)} kg CO2e from a recent grocery purchase. Generate a single, highly relatable, and slightly emotional sentence comparing this specific weight to an everyday activity (e.g., charging a smartphone for X years, running a microwave, driving a specific distance, melting Arctic ice). Keep it under 20 words. Make it punchy. Do not use formatting, just the sentence.`;
       
       const cleanKey = apiKeyValue.trim();
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
 
       let delay = 1000;
       let success = false;
@@ -395,7 +395,7 @@ Track your carbon footprint instantly with EcoPulse!`;
     return 10;
   };
 
-  const strokeDashOffsetVal = 100 - (myCalculatedStats.scoreValue || 50);
+  const strokeDashOffsetVal = 100 - (myCalculatedStats.complianceScore || 50);
 
   return (
     <div id="scorecard-visual-capture" className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-surface-800 border border-border-soft rounded-[18px] p-6 shadow-sm overflow-hidden">
@@ -470,7 +470,7 @@ Track your carbon footprint instantly with EcoPulse!`;
             <circle cx="72" cy="72" r="58" stroke="#20C16A" strokeWidth="10" fill="transparent" strokeDasharray="364" strokeDashoffset={182 + (strokeDashOffsetVal * 1.82)} strokeLinecap="round" className="origin-center rotate-45 transition-all duration-1000 ease-out" />
           </svg>
           <div className="absolute text-center">
-            <span className="text-2xl font-extrabold text-text-100 font-mono">{myCalculatedStats.scoreValue}%</span>
+            <span className="text-2xl font-extrabold text-text-100 font-mono">{myCalculatedStats.complianceScore || 0}%</span>
             <p className="text-[8px] text-text-500 uppercase font-semibold">Climate Score</p>
           </div>
         </div>

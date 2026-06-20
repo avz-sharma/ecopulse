@@ -6,15 +6,80 @@ export default function ActionPlan({ selectedReceipt, apiKeyValue, setActionPoin
   const [acceptedQuests, setAcceptedQuests] = useState({});
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [hasCompletedAll, setHasCompletedAll] = useState(false);
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0);
+
+  const formatCooldown = (ms) => {
+    const totalSecs = Math.ceil(ms / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const minutes = Math.floor((totalSecs % 3600) / 60);
+    const seconds = totalSecs % 60;
+    return [
+      hours.toString().padStart(2, '0'),
+      minutes.toString().padStart(2, '0'),
+      seconds.toString().padStart(2, '0')
+    ].join(':');
+  };
 
   useEffect(() => {
-    setQuests([]);
-    setAcceptedQuests({});
+    const checkCooldown = () => {
+      const cooldownEndStr = localStorage.getItem('ECOPULSE_QUESTS_COOLDOWN_END');
+      if (cooldownEndStr) {
+        const cooldownEnd = parseInt(cooldownEndStr, 10);
+        const timeLeft = cooldownEnd - Date.now();
+        if (timeLeft > 0) {
+          setCooldownTimeLeft(timeLeft);
+        } else {
+          localStorage.removeItem('ECOPULSE_QUESTS_COOLDOWN_END');
+          setCooldownTimeLeft(0);
+        }
+      } else {
+        setCooldownTimeLeft(0);
+      }
+    };
+
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     setShowLevelUp(false);
-    setHasCompletedAll(false);
-    if (setActionPointsBonus) setActionPointsBonus(0);
-    if (onQuestsUncompleted) onQuestsUncompleted();
-  }, [selectedReceipt?.id, setActionPointsBonus, onQuestsUncompleted]);
+    
+    if (!selectedReceipt?.id) {
+      setQuests([]);
+      setAcceptedQuests({});
+      setHasCompletedAll(false);
+      if (setActionPointsBonus) setActionPointsBonus(0);
+      if (onQuestsUncompleted) onQuestsUncompleted();
+      return;
+    }
+
+    const saved = localStorage.getItem(`ECOPULSE_QUESTS_${selectedReceipt.id}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setQuests(parsed.quests || []);
+        setAcceptedQuests(parsed.acceptedQuests || {});
+        setHasCompletedAll(!!parsed.hasCompletedAll);
+        
+        if (parsed.hasCompletedAll) {
+          if (setActionPointsBonus) setActionPointsBonus(30);
+          if (onQuestsCompleted) onQuestsCompleted();
+        } else {
+          if (setActionPointsBonus) setActionPointsBonus(0);
+          if (onQuestsUncompleted) onQuestsUncompleted();
+        }
+      } catch (err) {
+        console.error("Error parsing stored quests:", err);
+      }
+    } else {
+      setQuests([]);
+      setAcceptedQuests({});
+      setHasCompletedAll(false);
+      if (setActionPointsBonus) setActionPointsBonus(0);
+      if (onQuestsUncompleted) onQuestsUncompleted();
+    }
+  }, [selectedReceipt?.id]);
 
   const generateQuests = async () => {
     if (!selectedReceipt || !selectedReceipt.items) return;
@@ -22,11 +87,19 @@ export default function ActionPlan({ selectedReceipt, apiKeyValue, setActionPoin
 
     if (!apiKeyValue || !apiKeyValue.trim()) {
       setTimeout(() => {
-        setQuests([
+        const fallbackQuests = [
           'Swap one dairy-heavy meal with a plant-based alternative.',
           'Opt for loose vegetables instead of plastic-wrapped packs.',
           "Plan next week's meals to minimize food waste."
-        ]);
+        ];
+        setQuests(fallbackQuests);
+        if (selectedReceipt?.id) {
+          localStorage.setItem(`ECOPULSE_QUESTS_${selectedReceipt.id}`, JSON.stringify({
+            quests: fallbackQuests,
+            acceptedQuests: {},
+            hasCompletedAll: false
+          }));
+        }
         setLoading(false);
       }, 1200);
       return;
@@ -42,7 +115,7 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
         {
           method: 'POST',
           headers: { 
@@ -68,16 +141,31 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
 
       if (results.length === 3) {
         setQuests(results);
+        if (selectedReceipt?.id) {
+          localStorage.setItem(`ECOPULSE_QUESTS_${selectedReceipt.id}`, JSON.stringify({
+            quests: results,
+            acceptedQuests: {},
+            hasCompletedAll: false
+          }));
+        }
       } else {
         throw new Error('Formatting failure');
       }
     } catch (err) {
       console.error(err);
-      setQuests([
+      const failQuests = [
         'Monitor your highest carbon items next trip.',
         'Consider local alternatives for heavy footprint goods.',
         'Maintain current offset streak to build momentum.'
-      ]);
+      ];
+      setQuests(failQuests);
+      if (selectedReceipt?.id) {
+        localStorage.setItem(`ECOPULSE_QUESTS_${selectedReceipt.id}`, JSON.stringify({
+          quests: failQuests,
+          acceptedQuests: {},
+          hasCompletedAll: false
+        }));
+      }
     } finally {
       setLoading(false);
     }
@@ -88,16 +176,32 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
     setAcceptedQuests(updated);
 
     const allAccepted = Object.values(updated).filter(Boolean).length === 3;
+    
+    if (selectedReceipt?.id) {
+      localStorage.setItem(`ECOPULSE_QUESTS_${selectedReceipt.id}`, JSON.stringify({
+        quests,
+        acceptedQuests: updated,
+        hasCompletedAll: allAccepted
+      }));
+    }
+
     if (allAccepted && !hasCompletedAll) {
       setShowLevelUp(true);
       setHasCompletedAll(true);
       if (onQuestsCompleted) onQuestsCompleted();
-      if (setActionPointsBonus) setActionPointsBonus(50);
+      if (setActionPointsBonus) setActionPointsBonus(30);
+
+      const cooldownEnd = Date.now() + 2 * 60 * 60 * 1000;
+      localStorage.setItem('ECOPULSE_QUESTS_COOLDOWN_END', cooldownEnd.toString());
+      setCooldownTimeLeft(2 * 60 * 60 * 1000);
     } else if (!allAccepted) {
       setShowLevelUp(false);
       setHasCompletedAll(false);
       if (onQuestsUncompleted) onQuestsUncompleted();
       if (setActionPointsBonus) setActionPointsBonus(0);
+
+      localStorage.removeItem('ECOPULSE_QUESTS_COOLDOWN_END');
+      setCooldownTimeLeft(0);
     }
   };
 
@@ -106,7 +210,7 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
       {showLevelUp && (
         <div className="absolute inset-0 bg-primary-500/95 backdrop-blur-sm z-50 flex items-center justify-center flex-col animate-in fade-in zoom-in duration-300">
           <h2 className="text-4xl font-black text-text-100 animate-bounce">LEVEL UP!</h2>
-          <p className="text-xl font-bold text-text-100 mt-2 bg-black/20 px-4 py-2 rounded-full">+50 Action Points</p>
+          <p className="text-xl font-bold text-text-100 mt-2 bg-black/20 px-4 py-2 rounded-full">+30 Action Points</p>
         </div>
       )}
 
@@ -118,10 +222,15 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
         <button
           type="button"
           onClick={generateQuests}
-          disabled={loading || !selectedReceipt}
+          disabled={loading || !selectedReceipt || (quests.length > 0 && !hasCompletedAll) || cooldownTimeLeft > 0}
           className="bg-primary-500 hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed text-text-100 text-[10px] font-bold px-3 py-1.5 rounded-lg transition"
         >
-          {loading ? 'Analyzing...' : 'Generate Plan'}
+          {loading 
+            ? 'Analyzing...' 
+            : cooldownTimeLeft > 0 
+              ? `Cooldown (${formatCooldown(cooldownTimeLeft)})` 
+              : 'Generate Plan'
+          }
         </button>
       </div>
 
@@ -166,7 +275,7 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
           ))}
           {hasCompletedAll && (
             <div className="mt-3 bg-amber-500/20 border border-amber-500 text-center text-xs text-amber-500 font-extrabold py-2 rounded-xl animate-pulse">
-              🎉 SQUAD LEVEL UP! +50 Points Added to Standings!
+              🎉 SQUAD LEVEL UP! +30 Points Added to Standings!
             </div>
           )}
         </div>
