@@ -33,7 +33,7 @@ export default function Scorecard({
       const prompt = `A user has generated a carbon footprint of ${selectedReceipt.total_co2e.toFixed(2)} kg CO2e from a recent grocery purchase. Generate a single, highly relatable, and slightly emotional sentence comparing this specific weight to an everyday activity (e.g., charging a smartphone for X years, running a microwave, driving a specific distance, melting Arctic ice). Keep it under 20 words. Make it punchy. Do not use formatting, just the sentence.`;
       
       const cleanKey = apiKeyValue.trim();
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
 
       let delay = 1000;
       let success = false;
@@ -44,7 +44,10 @@ export default function Scorecard({
         try {
           const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-goog-api-key': cleanKey
+            },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: { temperature: 0.7 } // Slightly creative temperature

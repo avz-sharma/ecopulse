@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 import {
   getAuth,
   signInAnonymously,
@@ -41,24 +39,14 @@ import {
 // FIREBASE CONFIGURATION
 // ============================================================================
 
-const getSafeEnv = (key) => {
-  try {
-    // Safe dynamic execution to keep target compiler from scanning 'import.meta'
-    const metaEnv = (new Function("return import.meta.env"))();
-    return metaEnv[key] || "";
-  } catch (e) {
-    return "";
-  }
-};
-
 const firebaseConfig = {
-  apiKey: getSafeEnv("VITE_FIREBASE_API_KEY"),
-  authDomain: getSafeEnv("VITE_FIREBASE_AUTH_DOMAIN"),
-  projectId: getSafeEnv("VITE_FIREBASE_PROJECT_ID"),
-  storageBucket: getSafeEnv("VITE_FIREBASE_STORAGE_BUCKET"),
-  messagingSenderId: getSafeEnv("VITE_FIREBASE_MESSAGING_SENDER_ID"),
-  appId: getSafeEnv("VITE_FIREBASE_APP_ID"),
-  measurementId: getSafeEnv("VITE_FIREBASE_MEASUREMENT_ID")
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
 };
 
 // Initialize Firebase
@@ -71,7 +59,7 @@ isSupported().then((supported) => {
   }
 });
 
-const appId = typeof __app_id !== 'undefined' ? __app_id : (getSafeEnv("VITE_APP_ID") || 'ecopulse-app');
+const appId = typeof __app_id !== 'undefined' ? __app_id : (import.meta.env.VITE_APP_ID || 'ecopulse-app');
 
 // Safe Module Initializations
 const auth = getAuth(app);
@@ -101,8 +89,7 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [apiKeyValue, setApiKeyValue] = useState(() => {
     return localStorage.getItem("GEMINI_API_KEY") || 
-           getSafeEnv("GEMINI_API_KEY") || 
-           getSafeEnv("VITE_GEMINI_API_KEY") || "";
+           import.meta.env.VITE_GEMINI_API_KEY || "";
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [keySavedMessage, setKeySavedMessage] = useState("");
@@ -376,7 +363,7 @@ export default function App() {
 
         const cleanKey = apiKeyValue.trim();
         const modelName = "gemini-2.5-flash"; 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanKey}`;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
         let apiResponse;
         let delayTime = 1000;
@@ -384,7 +371,10 @@ export default function App() {
           try {
             apiResponse = await fetch(endpoint, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-goog-api-key': cleanKey
+              },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: textPayload }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -843,8 +833,6 @@ export default function App() {
 
   return (  
     <div className="min-h-screen font-sans antialiased flex flex-col md:flex-row bg-bg-900 text-text-100">
-      <Analytics />
-      <SpeedInsights />
 
       {/* === SIDEBAR (Inspired by PodCaster Dashboard Template) === */}  
       <aside className="w-full md:w-64 bg-bg-850 border-r border-border-soft flex flex-col justify-between p-5 flex-shrink-0">  
