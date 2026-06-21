@@ -87,7 +87,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id_here
 VITE_FIREBASE_APP_ID=your_firebase_app_id_here
 VITE_FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id_here
 VITE_APP_ID=ecopulse-app
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ---

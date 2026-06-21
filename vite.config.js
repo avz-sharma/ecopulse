@@ -6,5 +6,10 @@ export default defineConfig({
   plugins: [react()],
   base: "/",
   envPrefix: ['VITE_', 'GEMINI_'],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
+  },
 });
 

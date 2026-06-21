@@ -220,9 +220,9 @@ export const getRankBadge = (rankVal, scoreVal) => {
   if (rankVal === 1) return "🥇 Methane Slayer";
   if (rankVal === 2) return "🥈 Coal Minimizer";
   if (rankVal === 3) return "🥉 Carbon Crusader";
-  if (scoreVal >= 80) return "🌳 Methane Slayer";
-  if (scoreVal >= 65) return "🌱 Coal Minimizer";
-  return "⚡ Carbon Consumer";
+  if (scoreVal >= 80) return "🏅 Methane Slayer";
+  if (scoreVal >= 65) return "🎖️ Coal Minimizer";
+  return "🌱 Carbon Consumer";
 };
 
 /**

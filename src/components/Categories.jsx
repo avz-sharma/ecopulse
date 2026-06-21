@@ -30,27 +30,16 @@ export default function Categories({ myReceipts }) {
     Object.keys(REGIONAL_CARBON_FACTORS).forEach(cat => {
       itemDistribution[cat] = 0;
     });
-    // If no receipts are present, use the exact sample values matching the mockup
+    // If no receipts are present, initialize categories with zero values
     if (!myReceipts || myReceipts.length === 0) {
-      const samples = { 
-        "Dairy": 5.0, 
-        "Rice & Grains": 2.7, 
-        "Vegetables": 1.0, 
-        "Fruits": 0.7, 
-        "Beverages": 1.25, 
-        "Packaged Snacks": 1.5,
-        "Poultry": 2.25,
-        "Plant Milks": 1.0
-      };
-      const total = Object.values(samples).reduce((a, b) => a + b, 0);
       const results = {};
       Object.keys(REGIONAL_CARBON_FACTORS).forEach(cat => {
         results[cat] = {
-          val: samples[cat] || 0,
-          pct: total > 0 ? Math.round(((samples[cat] || 0) / total) * 100) : 0
+          val: 0,
+          pct: 0
         };
       });
-      return { categoryStats: results, totalAll: total };
+      return { categoryStats: results, totalAll: 0 };
     }
 
     let totalAll = 0;

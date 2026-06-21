@@ -44,3 +44,6 @@ demo-palette.html
 
 # Local setup files
 direct_tree.txt
+
+# Coverage
+coverage/
