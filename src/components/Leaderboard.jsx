@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';  
+import PropTypes from 'prop-types';
 import {   
   collection,   
   doc,   
@@ -103,9 +104,9 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
 
   return (  
     <div className="bg-surface-800 rounded-[18px] p-6 border border-border-soft flex flex-col h-full text-text-100">  
-      <h3 className="text-xs font-bold text-text-500 mb-4 tracking-wider uppercase">  
+      <h2 className="text-xs font-bold text-text-500 mb-4 tracking-wider uppercase">  
         Indian Subcontinent Standings Map  
-      </h3>  
+      </h2>  
 
       {/* Tab Switcher Interface */}  
       <div className="flex space-x-1 bg-bg-900 p-1 rounded-xl mb-4 border border-border-soft">  
@@ -115,6 +116,7 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
           className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${  
             activeTab === 'individual' ? 'bg-primary-500 text-text-100 shadow-md shadow-primary-500/10' : 'text-text-500 hover:text-text-300'  
           }`}  
+          aria-label="Switch leaderboard view to individual standings"
         >  
           Individual  
         </button>  
@@ -124,6 +126,7 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
           className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${  
             activeTab === 'squad' ? 'bg-primary-500 text-text-100 shadow-md shadow-primary-500/10' : 'text-text-500 hover:text-text-300'  
           }`}  
+          aria-label="Switch leaderboard view to squad standings"
         >  
           Squads  
         </button>  
@@ -166,7 +169,7 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
               /* Active Squad Details */  
               <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-xl">  
                 <div className="flex justify-between items-center mb-2">  
-                  <h4 className="text-xs font-bold text-primary-300">🔥 {mySquad.name}</h4>  
+                  <h3 className="text-xs font-bold text-primary-300">🔥 {mySquad.name}</h3>  
                   <span className="text-[10px] text-text-400 font-mono">{mySquad.members?.length}/4 Members</span>  
                 </div>  
                   
@@ -176,6 +179,7 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
                       readOnly  
                       value={`${window.location.origin}?code=${mySquad.inviteCode}`}  
                       className="flex-1 bg-surface-800 border border-border-soft rounded-l-xl px-3 py-1.5 text-[10px] text-text-400 select-all outline-none"  
+                      aria-label="Squad invite link text"
                     />  
                     <button  
                       type="button"  
@@ -190,6 +194,7 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
                         }
                       }}  
                       className="bg-primary-500 hover:bg-primary-400 px-3 rounded-r-xl text-[10px] font-bold text-text-100 transition-all shrink-0"  
+                      aria-label="Copy squad invite link to clipboard"
                     >  
                       Copy Link  
                     </button>  
@@ -205,7 +210,7 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
 
             {/* Squad Leaderboard Feed */}  
             <div className="space-y-2 border-t border-border-soft pt-3">  
-              <h4 className="text-[10px] font-bold text-text-500 tracking-wider uppercase mb-2">Top Active Squads</h4>  
+              <h3 className="text-[10px] font-bold text-text-500 tracking-wider uppercase mb-2">Top Active Squads</h3>  
               {leaderboardData.length === 0 ? (
                 <div className="py-8 text-center text-text-500 text-xs border border-dashed border-border-soft rounded-xl">
                   No active squads found.
@@ -233,7 +238,7 @@ export default function Leaderboard({ currentUser, currentUserStats, activeUserI
 
       {/* Ripple Effect card integrated */}
       <div className="mt-4 pt-4 border-t border-border-soft bg-primary-500/5 rounded-xl p-3 text-center shrink-0">
-        <h4 className="text-[10px] text-primary-300 font-bold uppercase tracking-widest font-sans">The Ripple Effect</h4>
+        <h3 className="text-[10px] text-primary-300 font-bold uppercase tracking-widest font-sans">The Ripple Effect</h3>
         <p className="text-xs text-text-300 mt-1">
           If all <span className="font-bold text-amber-500">{leaderboardData.length || 1} members</span> adopted your active footprint,
           we would prevent <span className="font-bold text-amber-500">{( (leaderboardData.length || 1) * 2.4).toFixed(1)} kg CO2e</span> this week.
@@ -380,12 +385,14 @@ function SquadOnboarding({ currentUser, currentUserStats, db, appId, activeUserI
           value={squadName}   
           onChange={e => setSquadName(e.target.value)}  
           className="w-full bg-surface-700 border border-border-soft text-[10px] p-2 rounded-xl focus:border-primary-400 outline-none uppercase font-bold text-text-100 placeholder:text-text-500/50"  
+          aria-label="Enter new squad name"
         />  
         <button   
           type="button"   
           onClick={handleCreate}   
           disabled={processing || !squadName.trim()}  
           className="w-full bg-primary-500 hover:bg-primary-400 text-text-100 text-[10px] font-bold py-2 rounded-xl transition-all disabled:opacity-40"  
+          aria-label="Create a new climate action squad with the specified name"
         >  
           {processing ? 'CREATING...' : 'CREATE SQUAD'}  
         </button>  
@@ -404,12 +411,14 @@ function SquadOnboarding({ currentUser, currentUserStats, db, appId, activeUserI
           value={inviteCode}   
           onChange={e => setInviteCode(e.target.value)}  
           className="w-full bg-surface-700 border border-border-soft text-[10px] p-2 rounded-xl focus:border-primary-400 outline-none uppercase font-bold text-text-100 placeholder:text-text-500/50"  
+          aria-label="Enter squad invite code"
         />  
         <button   
           type="button"   
           onClick={() => handleJoin()}   
           disabled={processing || !inviteCode.trim()}  
           className="w-full bg-surface-800 hover:bg-surface-700 text-text-200 text-[10px] font-bold py-2 rounded-xl border border-border-soft transition-all disabled:opacity-40"  
+          aria-label="Join an existing squad using the entered invitation code"
         >  
           {processing ? 'JOINING...' : 'JOIN SQUAD'}  
         </button>  
@@ -417,3 +426,20 @@ function SquadOnboarding({ currentUser, currentUserStats, db, appId, activeUserI
     </div>  
   );  
 }
+
+Leaderboard.propTypes = {
+  currentUser: PropTypes.object,
+  currentUserStats: PropTypes.object.isRequired,
+  activeUserId: PropTypes.string.isRequired,
+  db: PropTypes.object.isRequired,
+  appId: PropTypes.string.isRequired,
+  auth: PropTypes.object.isRequired
+};
+
+SquadOnboarding.propTypes = {
+  currentUser: PropTypes.object,
+  currentUserStats: PropTypes.object.isRequired,
+  db: PropTypes.object.isRequired,
+  appId: PropTypes.string.isRequired,
+  activeUserId: PropTypes.string.isRequired
+};

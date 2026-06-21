@@ -91,26 +91,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("overview"); // overview | quests | ledger | diagnostics
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [apiKeyValue, setApiKeyValue] = useState(() => {
-    return localStorage.getItem("GEMINI_API_KEY") || 
-           import.meta.env.VITE_GEMINI_API_KEY || "";
-  });
   const [errorMessage, setErrorMessage] = useState("");
-  const [keySavedMessage, setKeySavedMessage] = useState("");
   const [diagnosticTab, setDiagnosticTab] = useState("resolved"); // resolved | ocr_json
-
-  const handleSaveApiKey = useCallback(() => {
-    localStorage.setItem("GEMINI_API_KEY", apiKeyValue);
-    setKeySavedMessage("Saved to App!");
-    setTimeout(() => setKeySavedMessage(""), 2500);
-  }, [apiKeyValue]);
-
-  const handleCopyEnvCommand = useCallback(() => {
-    const cmd = `$env:GEMINI_API_KEY="${apiKeyValue}"`;
-    navigator.clipboard.writeText(cmd);
-    setKeySavedMessage("PowerShell Cmd Copied!");
-    setTimeout(() => setKeySavedMessage(""), 2500);
-  }, [apiKeyValue]);
 
   // ==========================================
   // PHASE 1: Authentication Guard
@@ -365,10 +347,6 @@ export default function App() {
           points
         };
       } else {
-        if (!apiKeyValue.trim()) {
-          throw new Error("No API key available. Set a key or click a preset shortcut above.");
-        }
-
         const systemPrompt = `You are a deterministic, zero-hallucination carbon extraction engine for Indian Quick Commerce.
         Map each item in the raw invoice text using this multi-level fallback emission mapping system:
 
@@ -435,9 +413,11 @@ export default function App() {
           ]
         }`;
 
-        const cleanKey = apiKeyValue.trim();
-        const modelName = "gemini-2.5-flash"; 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+        const headers = { 
+          'Content-Type': 'application/json'
+        };
+
+        const endpoint = `/api/gemini?model=gemini-2.5-flash`;
 
         let apiResponse;
         let delayTime = 1000;
@@ -445,10 +425,7 @@ export default function App() {
           try {
             apiResponse = await fetch(endpoint, {
               method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'x-goog-api-key': cleanKey
-              },
+              headers,
               body: JSON.stringify({
                 contents: [{ parts: [{ text: textPayload }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -464,7 +441,14 @@ export default function App() {
         }
 
         if (!apiResponse || !apiResponse.ok) {
-          throw new Error(`API returned error code ${apiResponse?.status || 'Unknown'}`);
+          let errorMsg = `API returned error code ${apiResponse?.status || 'Unknown'}`;
+          try {
+            const errData = await apiResponse.json();
+            if (errData && errData.error) {
+              errorMsg = errData.error;
+            }
+          } catch (e) {}
+          throw new Error(errorMsg);
         }
 
         const data = await apiResponse.json();
@@ -649,7 +633,7 @@ export default function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [apiKeyValue, activeUserId, myReceipts, userNickname, syncPublicCarbonProfile]);
+  }, [activeUserId, myReceipts, userNickname, syncPublicCarbonProfile]);
 
   const handleUpdateNickname = useCallback(async () => {
     if (!userNickname.trim()) return;
@@ -781,13 +765,11 @@ export default function App() {
           userRankData={userRankData}   
           selectedReceipt={selectedReceipt}   
           myReceipts={myReceipts}   
-          setKeySavedMessage={setKeySavedMessage}  
-          apiKeyValue={apiKeyValue}  
         />
 
         {/* Row 3: Basket Breakdown Table */}  
         <div className="bg-surface-800 border border-border-soft rounded-[18px] p-6 shadow-sm">  
-          <h3 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">Your Basket Breakdown</h3>  
+          <h2 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">Your Basket Breakdown</h2>  
           <div className="overflow-x-auto">  
             <table className="w-full text-left border-collapse text-xs">  
               <thead>  
@@ -821,7 +803,7 @@ export default function App() {
 
         {/* Row 4: OCR Input Panel */}  
         <div className="bg-surface-800 border border-border-soft rounded-[18px] p-6 shadow-sm">  
-          <h3 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">Log a New Purchase</h3>  
+          <h2 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">Log a New Purchase</h2>  
           <Uploader   
             executeCarbonPipeline={executeCarbonPipeline}   
             isProcessing={isProcessing}   
@@ -838,7 +820,6 @@ export default function App() {
       <div className="max-w-2xl mx-auto">  
         <ActionPlan 
           selectedReceipt={selectedReceipt} 
-          apiKeyValue={apiKeyValue} 
           setActionPointsBonus={setActionPointsBonus} 
           onQuestsCompleted={handleQuestsCompleted}
           onQuestsUncompleted={handleQuestsUncompleted}
@@ -851,7 +832,7 @@ export default function App() {
     return (  
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">  
         <div className="lg:col-span-6 bg-surface-800 border border-border-soft rounded-[18px] p-6 shadow-sm">  
-          <h3 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">My Checkout Logs</h3>  
+          <h2 className="text-sm font-extrabold text-text-100 uppercase tracking-wider mb-4">My Checkout Logs</h2>  
           <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">  
             {myReceipts.map((record, index) => {
               const isEditing = editingLogId === record.id;
@@ -878,6 +859,7 @@ export default function App() {
                           }}
                           className="bg-surface-800 border border-border-soft rounded px-2 py-1 text-xs text-text-100 font-bold focus:outline-none w-full"
                           autoFocus
+                          aria-label="Rename log merchant input"
                         />
                         <button
                           type="button"
@@ -896,7 +878,7 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="flex items-center space-x-2 group/log">  
-                        <h4 className="text-xs font-bold text-text-100 truncate">{record.merchant}</h4>  
+                        <h3 className="text-xs font-bold text-text-100 truncate">{record.merchant}</h3>  
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1063,31 +1045,13 @@ export default function App() {
       </aside>
 
       {/* === MAIN CONTAINER === */}  
-      <div className="flex-1 flex flex-col min-w-0 bg-bg-900">
+      <main className="flex-1 flex flex-col min-w-0 bg-bg-900">
 
         {/* Sub-Header bar for Key & Streak configurations */}  
         <header className="border-b border-border-soft bg-bg-850/90 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">  
           <div>  
-            <h2 className="text-lg font-bold text-text-100 tracking-tight">Climate Impact Monitor</h2>  
+            <h1 className="text-lg font-bold text-text-100 tracking-tight">Climate Impact Monitor</h1>  
             <p className="text-xs text-text-500 font-medium">Transforming daily purchases into planetary action.</p>  
-          </div>
-
-          <div className="flex items-center space-x-3">  
-            <input  
-              type="password"  
-              placeholder="Gemini Key"  
-              value={apiKeyValue}  
-              onChange={(e) => setApiKeyValue(e.target.value)}  
-              className="bg-surface-700 border border-border-soft focus:border-primary-400 outline-none text-xs rounded-xl px-3 py-2 w-36 text-text-300 placeholder:text-text-500/50"  
-            />  
-            <button  
-              type="button"  
-              onClick={handleSaveApiKey}  
-              className="bg-primary-500 hover:bg-primary-400 text-text-100 text-xs font-bold px-3 py-2 rounded-xl transition focus:outline-none"  
-            >  
-              Set Key  
-            </button>  
-            {keySavedMessage && <span className="text-xs text-amber-500 animate-pulse font-mono font-bold">{keySavedMessage}</span>}  
           </div>  
         </header>
 
@@ -1100,7 +1064,7 @@ export default function App() {
           {activeTab === "ledger" && renderLedgerTab()}  
           {activeTab === "categories" && <Categories myReceipts={myReceipts} />}  
         </div>  
-      </div>  
+      </main>  
 
       {/* --- SLIDING CONGRATS BANNER OVERLAY --- */}
       <div 

@@ -30,9 +30,6 @@ export default function Categories({ myReceipts }) {
     Object.keys(REGIONAL_CARBON_FACTORS).forEach(cat => {
       itemDistribution[cat] = 0;
     });
-
-    console.log("Categories Component received myReceipts:", myReceipts);
-
     // If no receipts are present, use the exact sample values matching the mockup
     if (!myReceipts || myReceipts.length === 0) {
       const samples = { 
@@ -88,9 +85,9 @@ export default function Categories({ myReceipts }) {
 
   return (
     <div className="bg-surface-800 border border-border-soft rounded-[18px] shadow-sm p-6 max-w-4xl mx-auto">
-      <h3 className="text-xs font-bold text-text-500 uppercase tracking-wider mb-2">
+      <h2 className="text-xs font-bold text-text-500 uppercase tracking-wider mb-2">
         Historical Category Distributions
-      </h3>
+      </h2>
 
       {/* Debug Info in UI */}
       <div className="mb-6 text-[10px] font-mono text-text-500 bg-[#121824] p-3 rounded-lg border border-border-soft">

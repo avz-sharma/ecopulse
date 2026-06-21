@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
-export default function ActionPlan({ selectedReceipt, apiKeyValue, setActionPointsBonus, onQuestsCompleted, onQuestsUncompleted }) {
+export default function ActionPlan({ selectedReceipt, setActionPointsBonus, onQuestsCompleted, onQuestsUncompleted }) {
   const [quests, setQuests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [acceptedQuests, setAcceptedQuests] = useState({});
@@ -85,26 +86,6 @@ export default function ActionPlan({ selectedReceipt, apiKeyValue, setActionPoin
     if (!selectedReceipt || !selectedReceipt.items) return;
     setLoading(true);
 
-    if (!apiKeyValue || !apiKeyValue.trim()) {
-      setTimeout(() => {
-        const fallbackQuests = [
-          'Swap one dairy-heavy meal with a plant-based alternative.',
-          'Opt for loose vegetables instead of plastic-wrapped packs.',
-          "Plan next week's meals to minimize food waste."
-        ];
-        setQuests(fallbackQuests);
-        if (selectedReceipt?.id) {
-          localStorage.setItem(`ECOPULSE_QUESTS_${selectedReceipt.id}`, JSON.stringify({
-            quests: fallbackQuests,
-            acceptedQuests: {},
-            hasCompletedAll: false
-          }));
-        }
-        setLoading(false);
-      }, 1200);
-      return;
-    }
-
     const prompt = `A user just uploaded a grocery receipt. The items with the highest carbon footprint were: ${[...selectedReceipt.items]
       .sort((a, b) => (b.co2e_kg || 0) - (a.co2e_kg || 0))
       .slice(0, 3)
@@ -114,20 +95,19 @@ Provide exactly 3 short, actionable, and encouraging steps (under 12 words each)
 Format as a numbered list. No intro, no outro, just the 3 steps.`;
 
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
-        {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKeyValue.trim()
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7 }
-          })
-        }
-      );
+      const headers = { 
+        'Content-Type': 'application/json'
+      };
+      const endpoint = `/api/gemini?model=gemini-2.5-flash`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7 }
+        })
+      });
 
       if (!response.ok) throw new Error('API Response Error');
 
@@ -216,7 +196,7 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
 
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-extrabold text-text-100 uppercase tracking-wider">Weekly Carbon Quests</h3>
+          <h2 className="text-sm font-extrabold text-text-100 uppercase tracking-wider">Weekly Carbon Quests</h2>
           <p className="text-[10px] text-text-500 font-medium">AI-Targeted footprint reduction plans</p>
         </div>
         <button
@@ -287,3 +267,10 @@ Format as a numbered list. No intro, no outro, just the 3 steps.`;
     </div>
   );
 }
+
+ActionPlan.propTypes = {
+  selectedReceipt: PropTypes.object,
+  setActionPointsBonus: PropTypes.func.isRequired,
+  onQuestsCompleted: PropTypes.func.isRequired,
+  onQuestsUncompleted: PropTypes.func.isRequired
+};
