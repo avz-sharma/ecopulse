@@ -96,39 +96,51 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 ```
 Ecopulse/
-├── agents/                   # Custom LLM agent definitions (Core Prompts)
+├── agents/
 │   ├── carbon_resolver_agent.md
 │   └── extractor_agent.md
-├── api/                      # Serverless backend functions (Vercel)
-│   └── gemini.js             # Secure Gemini API backend proxy with retries
-├── docs/                     # Design documents, categories, and emission factors
+├── api/
+│   └── gemini.js
+├── docs/
 │   ├── dynamic_categories.txt
 │   ├── factors.txt
 │   ├── logic.txt
-│   └── useEffect_Fix.md      # React Hook dependency array size guide
-├── src/                      # React frontend source code
-│   ├── __tests__/            # Centralized Vitest unit test files
-│   │   ├── logic.test.js
+│   └── useEffect_Fix.md
+├── public/
+├── src/
+│   ├── __tests__/
+│   │   ├── ActionPlan.test.jsx
+│   │   ├── App.test.jsx
+│   │   ├── Categories.test.jsx
+│   │   ├── Leaderboard.test.jsx
 │   │   ├── Scorecard.test.jsx
-│   │   └── Uploader.test.jsx
-│   ├── components/           # React component views
-│   │   ├── ActionPlan.jsx    # Gamification/quest panel
-│   │   ├── Categories.jsx    # Emissions breakdown cards
-│   │   ├── Leaderboard.jsx   # Shared carbon standings
-│   │   ├── Scorecard.jsx     # Visual carbon receipt calculator
-│   │   └── Uploader.jsx      # OCR uploader and presets
-│   ├── utils/                # Calculation & parsing utilities
-│   │   └── logic.js          # Core math/grading rules
-│   ├── App.jsx               # Application entry point & core logic
-│   ├── index.css             # Main styling configurations
-│   ├── setupTests.js         # Vitest global jsdom configuration & mocks
-│   └── main.jsx              # React mounting logic
-├── .env.example              # Template environment variables file
-├── .gitignore                # Git ignore configurations
-├── index.html                # Vite entry point with strict CSP
-├── package.json              # Project dependencies & scripts
-├── tailwind.config.js        # Tailwind CSS configuration
-├── vercel.json               # Vercel deployment/rewrite configurations
-├── vercel_serverless_function.js # Original serverless handler baseline
-└── vite.config.js            # Vite configurations (with local dev API middleware)
+│   │   ├── Uploader.test.jsx
+│   │   └── logic.test.js
+│   ├── components/
+│   │   ├── ActionPlan.jsx
+│   │   ├── Categories.jsx
+│   │   ├── Leaderboard.jsx
+│   │   ├── Scorecard.jsx
+│   │   └── Uploader.jsx
+│   ├── utils/
+│   │   └── logic.js
+│   ├── App.jsx
+│   ├── index.css
+│   ├── setupTests.js
+│   └── main.jsx
+├── .env
+├── .env.example
+├── .gitignore
+├── direct_tree.txt
+├── eslint.config.js
+├── index.html
+├── package.json
+├── package-lock.json
+├── postcss.config.js
+├── README.md
+├── tailwind.config.js
+├── vercel.json
+├── vercel_serverless_function.js
+└── vite.config.js
+
 ```
