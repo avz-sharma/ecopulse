@@ -1,5 +1,14 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { vi, beforeEach, afterEach } from 'vitest';
+
+beforeEach(() => {
+  // Enforce a pristine real-time environment before every test execution
+  vi.useRealTimers();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 // Mock Canvas methods to prevent issues in jsdom environment
 HTMLCanvasElement.prototype.getContext = () => ({
@@ -36,3 +45,19 @@ if (typeof navigator !== 'undefined') {
 if (typeof window !== 'undefined') {
   window.open = vi.fn();
 }
+
+// Centralized Firebase Mocks
+vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(),
+  collection: vi.fn(() => ({ type: 'collection' })),
+  doc: vi.fn(() => ({ type: 'document' })),
+  onSnapshot: vi.fn(() => vi.fn()),
+  setDoc: vi.fn(),
+  updateDoc: vi.fn(),
+  getDoc: vi.fn(),
+  getDocs: vi.fn(),
+  addDoc: vi.fn(),
+  query: vi.fn(),
+  serverTimestamp: vi.fn(),
+  arrayUnion: vi.fn()
+}));

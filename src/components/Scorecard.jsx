@@ -82,22 +82,11 @@ export default function Scorecard({
     });
 
     if (myReceipts.length === 0) {
-      const samples = { 
-        "Dairy": 5.0, 
-        "Rice & Grains": 2.7, 
-        "Vegetables": 1.0, 
-        "Fruits": 0.7, 
-        "Beverages": 1.25, 
-        "Packaged Snacks": 1.5,
-        "Poultry": 2.25,
-        "Plant Milks": 1.0
-      };
-      const total = Object.values(samples).reduce((a, b) => a + b, 0);
       const results = {};
       Object.keys(REGIONAL_CARBON_FACTORS).forEach(cat => {
         results[cat] = {
-          val: samples[cat] || 0,
-          pct: total > 0 ? Math.round(((samples[cat] || 0) / total) * 100) : 0
+          val: 0,
+          pct: 0
         };
       });
       return results;
@@ -196,7 +185,7 @@ export default function Scorecard({
 
     ctx.fillStyle = "#43D98A";
     ctx.font = "bold 16px sans-serif";
-    const rnk = userRankData.rank;
+    const rnk = userRankData?.rank || "-";
     const rankTitle = getRankBadge(rnk, myCalculatedStats.scoreValue).split(" ").slice(1).join(" ") || "Carbon Consumer";
     ctx.fillText(`Rank: #${rnk} (${rankTitle})`, 65, 236);
 
@@ -314,7 +303,7 @@ export default function Scorecard({
       });
     });
 
-    const rnk = userRankData.rank;
+    const rnk = userRankData?.rank || "-";
     const rankTitle = getRankBadge(rnk, myCalculatedStats.scoreValue).split(" ").slice(1).join(" ") || "Carbon Consumer";
     const textMessage = `🌱 *EcoPulse Carbon Scorecard* 🌱
 👤 *User:* ${userNickname}
@@ -482,10 +471,10 @@ Track your carbon footprint instantly with EcoPulse!`;
 
           <div className="flex items-center space-x-3 my-2">
             <div className="w-16 h-16 bg-amber-500/5 rounded-full border border-amber-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(242,177,52,0.05)] shrink-0">
-              <span className="text-2xl font-extrabold text-amber-500 font-mono">#{userRankData.rank}</span>
+              <span className="text-2xl font-extrabold text-amber-500 font-mono">#{userRankData?.rank || "-"}</span>
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-text-100 truncate">Standings: {userRankData.percentile}%</p>
+              <p className="text-xs font-bold text-text-100 truncate">Standings: {userRankData?.percentile || 0}%</p>
               <p className="text-[10px] text-text-500 leading-normal">Optimized stance compared to regional standards</p>
             </div>
           </div>
