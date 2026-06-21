@@ -99,13 +99,21 @@ Ecopulse/
 ├── agents/                   # Custom LLM agent definitions (Core Prompts)
 │   ├── carbon_resolver_agent.md
 │   └── extractor_agent.md
+├── api/                      # Serverless backend functions (Vercel)
+│   └── gemini.js             # Secure Gemini API backend proxy with retries
 ├── docs/                     # Design documents, categories, and emission factors
 │   ├── dynamic_categories.txt
 │   ├── factors.txt
-│   └── logic.txt
+│   ├── logic.txt
+│   └── useEffect_Fix.md      # React Hook dependency array size guide
 ├── src/                      # React frontend source code
+│   ├── __tests__/            # Centralized Vitest unit test files
+│   │   ├── logic.test.js
+│   │   ├── Scorecard.test.jsx
+│   │   └── Uploader.test.jsx
 │   ├── components/           # React component views
 │   │   ├── ActionPlan.jsx    # Gamification/quest panel
+│   │   ├── Categories.jsx    # Emissions breakdown cards
 │   │   ├── Leaderboard.jsx   # Shared carbon standings
 │   │   ├── Scorecard.jsx     # Visual carbon receipt calculator
 │   │   └── Uploader.jsx      # OCR uploader and presets
@@ -113,12 +121,14 @@ Ecopulse/
 │   │   └── logic.js          # Core math/grading rules
 │   ├── App.jsx               # Application entry point & core logic
 │   ├── index.css             # Main styling configurations
-│   ├── logic.test.js         # Math engine unit tests
+│   ├── setupTests.js         # Vitest global jsdom configuration & mocks
 │   └── main.jsx              # React mounting logic
 ├── .env.example              # Template environment variables file
 ├── .gitignore                # Git ignore configurations
-├── index.html                # Vite entry point
+├── index.html                # Vite entry point with strict CSP
 ├── package.json              # Project dependencies & scripts
-├── vite.config.js            # Vite configurations
-└── README.md                 # Project README (This file)
+├── tailwind.config.js        # Tailwind CSS configuration
+├── vercel.json               # Vercel deployment/rewrite configurations
+├── vercel_serverless_function.js # Original serverless handler baseline
+└── vite.config.js            # Vite configurations (with local dev API middleware)
 ```
