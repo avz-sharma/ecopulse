@@ -42,3 +42,5 @@ build/
 # Demo files
 demo-palette.html
 
+# Local setup files
+direct_tree.txt

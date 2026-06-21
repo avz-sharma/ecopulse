@@ -64,6 +64,13 @@ export const REGIONAL_CARBON_FACTORS = {
   "Other": { factor: 2.0, unit: "kg CO2e per kg", note: "Generic fallback penalty factor" }
 };
 
+/**
+ * Resolves the emissions factor, category, mapping status, confidence level, and uncertainty level for a product.
+ * Uses exact product matching, product type matching (keywords), and category fallback logic.
+ * @param {string} rawName - The raw name of the scanned receipt item.
+ * @param {string} [category] - Optional category hint.
+ * @returns {Object} An object containing the emission factor, category, status, matching, and uncertainty.
+ */
 export const resolveEmissionsFactor = (rawName, category) => {
   const nameLower = rawName.toLowerCase();
   
@@ -141,6 +148,11 @@ export const resolveEmissionsFactor = (rawName, category) => {
   };
 };
 
+/**
+ * Calculates compliance grade and score points based on estimated CO2 emissions of a receipt.
+ * @param {number} total_co2e - The total carbon footprint of the receipt in kg CO2e.
+ * @returns {Object} An object containing the computed grade (A, B, C, D, or F) and score points.
+ */
 export const getReceiptGradeAndPoints = (total_co2e) => {
   let score = Math.max(15, Math.round(100 - (total_co2e - 5.0) * 8.5));
   if (score > 100) score = 100;
@@ -163,6 +175,11 @@ export const getReceiptGradeAndPoints = (total_co2e) => {
   return { grade, points };
 };
 
+/**
+ * Computes individual climate metrics (global score, average weekly emissions, grade, and overall compliance score) across a list of receipts.
+ * @param {Array<Object>} receiptList - The list of historical receipt documents.
+ * @returns {Object} An object summarizing the user's aggregate climate statistics.
+ */
 export const calculateIndividualMetrics = (receiptList) => {
   if (receiptList.length === 0) {
     return { scoreValue: 0, averageWeekly: 0, grade: 'N/A', complianceScore: 0, totalEmissions: 0 };
@@ -193,6 +210,12 @@ export const calculateIndividualMetrics = (receiptList) => {
   return { scoreValue, averageWeekly, grade, complianceScore: avgScore, totalEmissions: parseFloat(totalSum.toFixed(2)) };
 };
 
+/**
+ * Resolves a visual ranking badge text (badge emoji + rank description) based on active leaderboard rank and score value.
+ * @param {number|string} rankVal - The user's active placement/rank on the leaderboard.
+ * @param {number} scoreVal - The user's dynamic cumulative points score.
+ * @returns {string} The formatted badge text.
+ */
 export const getRankBadge = (rankVal, scoreVal) => {
   if (rankVal === 1) return "🥇 Methane Slayer";
   if (rankVal === 2) return "🥈 Coal Minimizer";
@@ -202,6 +225,12 @@ export const getRankBadge = (rankVal, scoreVal) => {
   return "⚡ Carbon Consumer";
 };
 
+/**
+ * Calculates the current consecutive daily streak of qualifying carbon checkout logs.
+ * Streaks must be consecutive daily uploads of a qualifying grade (A, B, or C) and require at least 2 days to initialize.
+ * @param {Array<Object>} receipts - The list of receipt records.
+ * @returns {number} The consecutive daily streak length (0 or >= 1).
+ */
 export const calculateDailyStreak = (receipts) => {
   if (!receipts || receipts.length === 0) return 0;
 

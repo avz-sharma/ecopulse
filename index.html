@@ -1,12 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>EcoPulse Collective</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- 
+      Strict Content Security Policy (CSP) 
+      Allows core assets, inline scripts/styles needed by React, Firebase Realtime listeners,
+      Google Tag Manager/Analytics, and Vercel Telemetry.
+    -->
+    <meta 
+      http-equiv="Content-Security-Policy" 
+      content="default-src 'self' https://*.firebasedatabase.app https://*.firebaseio.com https://*.googleapis.com https://*.gstatic.com; 
+               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://va.vercel-scripts.com https://www.googletagmanager.com; 
+               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+               font-src 'self' https://fonts.gstatic.com; 
+               img-src 'self' data: blob: https://*; 
+               connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://www.google-analytics.com;"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>EcoPulse - Passively Combat Climate Change</title>
   </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+  <body class="bg-gray-950 text-gray-100 min-h-screen selection:bg-emerald-500 selection:text-black">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

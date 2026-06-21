@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { getRankBadge, REGIONAL_CARBON_FACTORS } from '../utils/logic';
 
 export default function Scorecard({ 
@@ -6,9 +7,7 @@ export default function Scorecard({
   myCalculatedStats, 
   userRankData, 
   selectedReceipt, 
-  myReceipts, 
-  setKeySavedMessage,
-  apiKeyValue
+  myReceipts
 }) {
   
   // Pre-calculated stats for the currently inspected receipt in view
@@ -24,16 +23,14 @@ export default function Scorecard({
   useEffect(() => {
     const fetchEmotionalInsight = async () => {
       if (!selectedReceipt || !selectedReceipt.total_co2e) return;
-      if (!apiKeyValue || !apiKeyValue.trim()) {
-        setAiInsight(""); // Fallback to normal stats if no API key is provided
-        return;
-      }
 
       setIsGeneratingInsight(true);
       const prompt = `A user has generated a carbon footprint of ${selectedReceipt.total_co2e.toFixed(2)} kg CO2e from a recent grocery purchase. Generate a single, highly relatable, and slightly emotional sentence comparing this specific weight to an everyday activity (e.g., charging a smartphone for X years, running a microwave, driving a specific distance, melting Arctic ice). Keep it under 20 words. Make it punchy. Do not use formatting, just the sentence.`;
       
-      const cleanKey = apiKeyValue.trim();
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+      const headers = { 
+        'Content-Type': 'application/json'
+      };
+      const endpoint = `/api/gemini?model=gemini-2.5-flash`;
 
       let delay = 1000;
       let success = false;
@@ -44,10 +41,7 @@ export default function Scorecard({
         try {
           const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'x-goog-api-key': cleanKey
-            },
+            headers,
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: { temperature: 0.7 } // Slightly creative temperature
@@ -79,7 +73,7 @@ export default function Scorecard({
     };
 
     fetchEmotionalInsight();
-  }, [selectedReceipt, apiKeyValue]);
+  }, [selectedReceipt]);
 
   const categoryStats = React.useMemo(() => {
     const itemDistribution = {};
@@ -442,16 +436,17 @@ Track your carbon footprint instantly with EcoPulse!`;
         </div>
 
         <div className="flex space-x-2 pt-1">
-          <button type="button" onClick={handleDownloadPNG} className="flex-1 bg-surface-700 hover:bg-surface-800 text-text-100 text-[10px] font-bold py-2 rounded-lg transition border border-border-soft">
+          <button type="button" onClick={handleDownloadPNG} className="flex-1 bg-surface-700 hover:bg-surface-800 text-text-100 text-[10px] font-bold py-2 rounded-lg transition border border-border-soft" aria-label="Export scorecard as PNG image">
             Export Card
           </button>
-          <button type="button" onClick={handleShareWhatsApp} className="flex-1 bg-primary-500 hover:bg-primary-400 text-text-100 text-[10px] font-bold py-2 rounded-lg transition">
+          <button type="button" onClick={handleShareWhatsApp} className="flex-1 bg-primary-500 hover:bg-primary-400 text-text-100 text-[10px] font-bold py-2 rounded-lg transition" aria-label="Share scorecard details on WhatsApp">
             Share WhatsApp
           </button>
           <button 
             type="button" 
             onClick={handleSmartCart} 
             className="flex-1 bg-primary-500 hover:bg-primary-400 text-text-100 text-[10px] font-bold py-2 rounded-lg transition"
+            aria-label="Export eco-friendly smart cart recommendations to clipboard"
           >
             Export Smart Cart 🛒
           </button>
@@ -490,7 +485,7 @@ Track your carbon footprint instantly with EcoPulse!`;
               <span className="text-2xl font-extrabold text-amber-500 font-mono">#{userRankData.rank}</span>
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs font-bold text-text-100 truncate">Standings: {userRankData.percentile}%</h4>
+              <p className="text-xs font-bold text-text-100 truncate">Standings: {userRankData.percentile}%</p>
               <p className="text-[10px] text-text-500 leading-normal">Optimized stance compared to regional standards</p>
             </div>
           </div>
@@ -501,3 +496,20 @@ Track your carbon footprint instantly with EcoPulse!`;
     </div>
   );
 }
+
+Scorecard.propTypes = {
+  userNickname: PropTypes.string.isRequired,
+  myCalculatedStats: PropTypes.shape({
+    scoreValue: PropTypes.number,
+    complianceScore: PropTypes.number,
+    grade: PropTypes.string,
+    averageWeekly: PropTypes.number
+  }).isRequired,
+  userRankData: PropTypes.shape({
+    rank: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    total: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    percentile: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  }).isRequired,
+  selectedReceipt: PropTypes.object,
+  myReceipts: PropTypes.array.isRequired
+};

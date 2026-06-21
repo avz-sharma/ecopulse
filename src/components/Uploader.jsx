@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
 // Ready-to-go quick-commerce mock datasets for immediate visual demonstrations
 export const PRESETS = {
@@ -134,7 +135,7 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
     <div className="bg-surface-800 border border-border-soft rounded-[18px] shadow-sm p-6 relative">
       
 
-      <h2 className="text-lg font-bold text-text-100 mb-2">Receipt Upload Suite</h2>
+      <h3 className="text-lg font-bold text-text-100 mb-2">Receipt Upload Suite</h3>
       <p className="text-sm text-text-500 mb-6">Upload Quick-Commerce billing formats to register points on the public standings map.</p>
 
       {/* Demo Mode Toggle vs Paste mode */}
@@ -143,6 +144,7 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
           type="button"
           onClick={() => setPastingText(false)}
           className={`flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${!pastingText ? 'bg-[#182030] text-primary-400 border border-primary-500/30' : 'bg-[#121824] text-text-500 border border-transparent hover:bg-[#161d2b]'}`}
+          aria-label="Switch to instant upload demo mode"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           Instant Upload Demo
@@ -151,6 +153,7 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
           type="button"
           onClick={() => setPastingText(true)}
           className={`flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${pastingText ? 'bg-[#182030] text-primary-400 border border-primary-500/30' : 'bg-[#121824] text-text-500 border border-transparent hover:bg-[#161d2b]'}`}
+          aria-label="Switch to paste receipt text mode"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
           Paste Invoice Text
@@ -186,6 +189,7 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
               disabled={isProcessing}
               onClick={() => handleExecute("", PRESETS.blinkit_01)}
               className="bg-[#121824] hover:bg-[#182030] border border-border-soft hover:border-primary-500/20 text-[10px] py-2 rounded-lg font-mono transition text-text-300 focus:ring-2 focus:ring-primary-500 focus:outline-none"
+              aria-label="Upload Blinkit demo invoice"
             >
               Blinkit Upload
             </button>
@@ -194,6 +198,7 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
               disabled={isProcessing}
               onClick={() => handleExecute("", PRESETS.zepto_01)}
               className="bg-[#121824] hover:bg-[#182030] border border-border-soft hover:border-primary-500/20 text-[10px] py-2 rounded-lg font-mono transition text-text-300 focus:ring-2 focus:ring-primary-500 focus:outline-none"
+              aria-label="Upload Zepto demo invoice"
             >
               Zepto Upload
             </button>
@@ -202,6 +207,7 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
               disabled={isProcessing}
               onClick={() => handleExecute("", PRESETS.swiggy_01)}
               className="bg-[#121824] hover:bg-[#182030] border border-border-soft hover:border-primary-500/20 text-[10px] py-2 rounded-lg font-mono transition text-text-300 focus:ring-2 focus:ring-primary-500 focus:outline-none"
+              aria-label="Upload Instamart demo invoice"
             >
               Instamart Upload
             </button>
@@ -215,12 +221,36 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             className="w-full bg-[#101624] border border-border-soft rounded-xl p-3 text-sm focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500 outline-none text-text-300 placeholder:text-text-500/60 transition resize-none"
+            aria-label="Paste receipt invoice details"
           />
+
+          <div className="flex flex-col space-y-1.5 text-left bg-[#101624] border border-border-soft p-3 rounded-xl">
+            <label htmlFor="invoice-file-upload" className="text-[10px] text-text-500 font-bold uppercase tracking-wider block">
+              Or upload receipt text file
+            </label>
+            <input
+              id="invoice-file-upload"
+              type="file"
+              accept=".txt,.json,.csv"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  setInputText(event.target.result);
+                };
+                reader.readAsText(file);
+              }}
+              className="block w-full text-xs text-text-300 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-[#121824] file:text-primary-400 hover:file:bg-[#182030] cursor-pointer focus:outline-none"
+            />
+          </div>
+
           <button
             type="button"
             onClick={() => handleExecute(inputText, null)}
             disabled={isProcessing}
             className="w-full bg-primary-500 hover:bg-primary-400 text-bg-950 shadow-sm font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2 focus:ring-2 focus:ring-primary-500 focus:outline-none focus:ring-offset-2 focus:ring-offset-bg-850"
+            aria-label="Submit receipt text to the Gemini carbon extraction pipeline"
           >
             {isProcessing ? (
               <>
@@ -245,3 +275,9 @@ export default function Uploader({ executeCarbonPipeline, isProcessing, errorMes
     </div>
   );
 }
+
+Uploader.propTypes = {
+  executeCarbonPipeline: PropTypes.func.isRequired,
+  isProcessing: PropTypes.bool.isRequired,
+  errorMessage: PropTypes.string
+};

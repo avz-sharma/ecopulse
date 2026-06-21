@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveEmissionsFactor, getReceiptGradeAndPoints, calculateDailyStreak } from './utils/logic';
+import { resolveEmissionsFactor, getReceiptGradeAndPoints, calculateDailyStreak } from '../utils/logic';
 
 describe('Math Engine: resolveEmissionsFactor', () => {
   it('returns the exact match factor for Amul Butter 500g', () => {
